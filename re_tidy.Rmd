@@ -13,7 +13,7 @@ This Markdown file is for the report exercise entitled *Cleaning data from eleva
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
-### load packages
+### Load packages
 
 Load the packages that are needed (tidyverse and dplyr), and then read the csv file (note: read_delim had to be used instead of read_csv because excel decided to make the csv with semicolons instead of commas). 
 
