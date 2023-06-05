@@ -1,15 +1,21 @@
 ---
-title: "re_tidy"
+title: "Report Exercise Chapter 3"
+author: "Samuel Bichsel"
 output: html_document
-date: "2023-03-10"
 ---
 
+## About this file
+
+This Markdown file is for the report exercise entitled *Cleaning data from elevated CO2 experiments* which is part of Chapter 3 (Data wrangling) of the AGDS Course. The goal is turning freely available, nice looking but untidy excel data from a scientific paper into a tidy dataset. 
+
+
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
+## load packages
 
-
-First step: load the packages that are needed (tidyverse and dplyr), and then read the csv file (note: read_delim had to be used instead of read_csv because excel decided to make the csv with semicolons instead of commas for some obscure reason). 
+Load the packages that are needed (tidyverse and dplyr), and then read the csv file (note: read_delim had to be used instead of read_csv because excel decided to make the csv with semicolons instead of commas for some obscure reason). 
 
 ```{r}
 library(tidyverse)
@@ -17,7 +23,9 @@ library(dplyr)
 Carbon <- readr::read_delim("./data/CarbonMeasurements.csv", delim = ";")
 ```
 
-## step 2
+##  Step 2
+
+#### In R, aggregate data per experiment and calculate the log-response ratio within each experiment.
 
 To calculate the log-response ratio (RR) for each experiment, take the logarithm of the mean increased CO2 divided by the mean ambient CO2. This log-response ratio is then appended to the table so each measurement has their respective treatment effect number in the column  "log-response ratio". 
 
@@ -40,7 +48,9 @@ knitr::kable(Carbon_agg)
 
 ```
 
-## step 3
+## Step 3
+
+#### Aggregate data across all experiments for different years since the start of the experiment, distinguishing an early phase (<3 years since start), a mid-phase (3-6 years since start), and a late phase (>6 years since start). Calculate the log-response ratio for each phase.
 
 The aggregation by time period accross all experiments of every log-response ratio is done by first adding a new column representing the three time periods with the function "mutate" using 4 cuts, inbetween which the three time intervals are situated. Basically, every row is being assigned one of these three intervals based on the time the experiment has been running (which is given in the column "time(years)"), and the summarizing will be done based on these intervals.  
 

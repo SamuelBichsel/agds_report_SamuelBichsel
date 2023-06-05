@@ -1,17 +1,23 @@
 ---
-title: "Telling a story from data"
+title: "Report Exercise Chapter 4"
+author: "Samuel Bichsel"
 output: html_document
-date: "2023-03-18"
+
 ---
 
+## About this File
+
+This Markdown file is for the report exercise entitled *Telling a story from data* which is part of Chapter 4 (Data visualisation) of the AGDS Course. The goal of this exercise is to explain and visualize the R dataset *airquality* with the help of various plots and statistical metrics.  
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 First, the libraries and functions used need to be setup. The functions were copied over from The Applied Geodata Science Book as well as everyones favourite website for this purpose - stackoverflow.com  
 ``` {r}
 #library and functions setup 
 airquality <- datasets::airquality
+
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
@@ -68,7 +74,9 @@ eq <- function(x,y) {
 }
 
 ```
-### Data desciption and important patterns
+## Data desciption and important patterns
+
+#### Description of the data that includes at least three statistical metrics that are relevant for the problem (argue for why you chose these metrics).
 
 The observed data here is about the daily air quality in the city of New York across 5 months from May to September in 1973. It includes variables about Ozone, Solar Radiation, Wind speeds and temperature.
 
@@ -80,6 +88,11 @@ max(airquality$Temp_C)
 min(airquality$Temp_C)
 mean(airquality$Temp_C)
 ```
+
+
+## Data visualisation 
+
+#### At least three publishable figures that show important patterns (e.g., outliers, temporal patterns, scatterplots of correlations, etc.)
 
 The visualization of the Daily Temperature and Solar Radiation evolution over the 5 months is made by using ggplot. The daily evolution, as well as a biweekly mean (which is calculated using the function for running mean from the AGDS book) is visible for both variables. 
 
@@ -164,12 +177,14 @@ ggplot(
 
 
 ```
-As can be seen in the plot, using a linear regression to predict the dependent variable (Temperature) based on the independent Variable (Solar Radiation) does not really work, which can be seen both visually as well as through the low R-squared (less than 10% of the variation of the daily Temperature is explained by the solar Radiation) 
 
-#average, min and max Temp for these 5 months 
-```{r}
+As can be seen in the plot, using a linear regression to predict the dependent variable (Temperature) based on the independent Variable (Solar Radiation) does not really work, which can be seen both visually as well as through the low R-squared (less than 10% of the variation of the daily Temperature is explained by the solar Radiation). 
 
-#include these in the T graph. Important because they allow us to better grasp how the temperature is across the observed 5 months
-#separate graph of monthly average T (instead of Solar Radiation) and only include solar Radiation in the correlation plot? Perhaps...  
 
-```
+## Interpretation and discussion
+
+#### Interpretation and discussion of your results and hypotheses. The text alone should not exceed one A4 page
+
+The expectation that solar Radiation and Temperature should be closely correlated seems not to be the case in the observed data. This can be seen both visually on the graphs, as well as through the linear Regression with a low R-squared of 0.0761. 
+
+There are multiple reasons why this could be: first of all it could be due to inconsistencies, the Solar Radiation is measured between 08:00 and 12:00, whereas the Temperature is for the whole day, as well as being only the maximum Temperature and not the average. Further, other local factors and weather conditions can influence daily Temperatures at the measuring station. 
