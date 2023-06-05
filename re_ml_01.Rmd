@@ -349,4 +349,5 @@ ggplot(
 ```
 *figure 6: Mean absolute error of fit compared to measurements on the test set for k between 1 and 100*
 
+
 Using the MAE as a metric and the test-datasets for various k, it seems as k = 32 is the optimal value for highest generalisability, as it has the lowest Mean Absolute Error for the test data. However, it is hard to come to a simple conclusion using just this somewhat rigid dataset without any re-sampling or other metric. 
