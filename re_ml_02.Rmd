@@ -1,0 +1,347 @@
+---
+title: "Report Exercise Chapter 10"
+author: "Samuel Bichsel"
+output: html_document
+---
+
+## About this file
+
+This Markdown file is for the report exercise of Chapter 10 (Supervised Machine learning II) of the AGDS Course. This final exercise is about spatial upscaling of a prediction model (using training data from one site to predict test data from a different site) and checking how generalisable that model is. Just like the previous chapter, this is done with knn and FLUXNET data. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(lubridate)
+library(dplyr)
+library(tidyverse)
+library(recipes)
+library(caret)
+library(cowplot)
+```
+
+
+## Setup 
+Setup like said in the script, except use prop = 0.8 to keep 20% of the data for testing purposes. 
+```{r}
+
+#make the data wrangling part be a function so I can apply it to both datasets without using way too much code. Yes I am aware this is not very nice looking code and could have been done more optimally but if I can be honest pipe operators confuse me for some reason so I just did it the fastest way I could come up with 
+
+wrangle <- function(data){
+data |>
+   # select only the variables we are interested in
+  dplyr::select(TIMESTAMP,
+                GPP_NT_VUT_REF,    # the target
+                ends_with("_QC"),  # quality control info
+                ends_with("_F"),   # includes all all meteorological covariates
+                -contains("JSB")   # weird useless variable
+                ) |>
+
+  # convert to a nice date object
+  dplyr::mutate(TIMESTAMP = ymd(TIMESTAMP)) |>
+
+  # set all -9999 to NA
+  dplyr::mutate(across(where(is.numeric), ~na_if(., -9999))) |> 
+  
+  # retain only data based on >=80% good-quality measurements
+  # overwrite bad data with NA (not dropping rows)
+  dplyr::mutate(GPP_NT_VUT_REF = ifelse(NEE_VUT_REF_QC < 0.8, NA, GPP_NT_VUT_REF),
+                TA_F           = ifelse(TA_F_QC        < 0.8, NA, TA_F),
+                SW_IN_F        = ifelse(SW_IN_F_QC     < 0.8, NA, SW_IN_F),
+                LW_IN_F        = ifelse(LW_IN_F_QC     < 0.8, NA, LW_IN_F),
+                VPD_F          = ifelse(VPD_F_QC       < 0.8, NA, VPD_F),
+                PA_F           = ifelse(PA_F_QC        < 0.8, NA, PA_F),
+                P_F            = ifelse(P_F_QC         < 0.8, NA, P_F),
+                WS_F           = ifelse(WS_F_QC        < 0.8, NA, WS_F)) |> 
+
+  # drop QC variables (no longer needed)
+  dplyr::select(-ends_with("_QC"))
+}
+
+
+
+daily_fluxes_Dav <- wrangle(daily_fluxes_Dav <- readr::read_csv("./data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv"))  
+
+daily_fluxes_Lae <- wrangle(daily_fluxes_Lae <- readr::read_csv("./data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv"))
+  
+
+
+#so apparently the entire column P_F of daily_fluxes_Lae is of poor quality according to its _QC in the csv document, meaning every value is now NA. This means I have no choice but to drop the entire column :/
+daily_fluxes_Lae <- daily_fluxes_Lae[!(colnames(daily_fluxes_Lae)) == "P_F"]
+
+#like previously, I drop the LW_IN_F column as well from the Davos dataset because of the quantity of missing data an a priori not too important nature of the variable 
+daily_fluxes_Dav <- daily_fluxes_Dav[!(colnames(daily_fluxes_Dav)) == "LW_IN_F"]
+
+
+
+# Data splitting
+set.seed(123)  # for reproducibility
+#
+
+
+
+Dav_split <- rsample::initial_split(daily_fluxes_Dav, prop = 0.8, strata = "VPD_F")
+Lae_split <- rsample::initial_split(daily_fluxes_Lae, prop = 0.8, strata = "VPD_F")
+
+daily_fluxes_Dav_train <- rsample::training(Dav_split)
+daily_fluxes_Dav_test <- rsample::testing(Dav_split)
+
+daily_fluxes_Lae_train <- rsample::training(Lae_split)
+daily_fluxes_Lae_test <- rsample::testing(Lae_split)
+
+# The same model formulation is in the previous chapter
+pp_Dav <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                      data = daily_fluxes_Dav_train) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+
+pp_Lae <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                      data = daily_fluxes_Lae_train) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+
+
+```
+
+tuning and selecting k
+
+```{r}
+
+mod_Dav <- caret::train(pp_Dav, 
+                    data = daily_fluxes_Dav_train |> drop_na(), 
+                    method = "knn",
+                    trControl = caret::trainControl(method = "cv", 
+                                                    number = 60
+                                                    ),
+                    tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
+                    metric = "MAE"
+                    )
+
+mod_Lae <- caret::train(pp_Lae, 
+                    data = daily_fluxes_Lae_train |> drop_na(), 
+                    method = "knn",
+                    trControl = caret::trainControl(method = "cv", 
+                                                    number = 60
+                                                    ),
+                    tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
+                    metric = "MAE"
+                    )
+
+
+mod_Dav
+mod_Lae
+
+```
+using MAE as a metric to tune the k, the best values are k = 25 for the Models of Davos and Laegern respectively. 
+
+
+
+## Evaluate models 
+
+#### Compare within-site predictions and across-site predictions on the test set for both sites, considering different metrics.
+
+```{r}
+source("./eval_model.R")
+
+#adding the fitted values by hand since eval_model doesn't do that for me
+
+daily_fluxes_Dav_test <- daily_fluxes_Dav_test |> 
+    drop_na()
+
+daily_fluxes_Dav_test$Dav_fitted <- predict(mod_Dav, newdata = daily_fluxes_Dav_test)
+
+daily_fluxes_Dav_test$Lae_fitted <- predict(mod_Lae, newdata = daily_fluxes_Dav_test)
+#idk if that's correct
+
+
+daily_fluxes_Lae_test <- daily_fluxes_Lae_test |> 
+    drop_na()
+
+daily_fluxes_Lae_test$Lae_fitted <- predict(mod_Lae, newdata = daily_fluxes_Lae_test)
+
+daily_fluxes_Lae_test$Dav_fitted <- predict(mod_Dav, newdata = daily_fluxes_Lae_test)
+
+
+```
+
+#### Davos training, Davos testing set
+```{r}
+eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Dav_test)
+
+daily_fluxes_Dav_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted)
+
+#need to figure out what comes where to give out the right RSQ and RMSE. Otherwise I think I'm fine in this part? idk. Maybe the caret::train giving me the mod_Dav could be wrong but shouldn't be. Not sure. I rly wanna wrap that shit up tmrw but i don't think I will ;DDDDDDDDDDDDDDDDDDDDD 
+```
+*figure 1: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*
+
+#### Davos training, Laegern testing set
+```{r}
+eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Lae_test)
+
+daily_fluxes_Lae_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted)
+
+
+```
+*figure 2: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*
+
+
+#### Lagern training, Laegern testing set
+```{r}
+eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Lae_test)
+
+daily_fluxes_Lae_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted)
+
+```
+*figure 3: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*
+
+
+#### Laegern training, Davos testing set
+```{r}
+eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Dav_test)
+
+daily_fluxes_Dav_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted)
+
+
+```
+*figure 4: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Davos test set*
+
+
+The results for these across-site model predictions aren't too bad, but definitely below the within-site, with all 3 metrics being slightly worse. 
+
+
+## Model with pooled data 
+
+#### Train a single model with training data pooled from both sites and predict with this single model on the test data of both sites
+
+
+
+```{r}
+# pool data
+#before being able to pool the data, I need to drop the columns that don't appear in both as otherwise I cannot combine the dataframes
+daily_fluxes_Dav_train <- daily_fluxes_Dav_train[!(colnames(daily_fluxes_Dav_train)) == "P_F"]
+
+daily_fluxes_Lae_train <- daily_fluxes_Lae_train[!(colnames(daily_fluxes_Lae_train)) == "LW_IN_F"]
+
+
+
+daily_fluxes_train_pool <- rbind(daily_fluxes_Dav_train, daily_fluxes_Lae_train)
+
+
+pp_pool <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F,
+                      data = daily_fluxes_train_pool) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+
+mod_pool <- caret::train(pp_pool, 
+                    data = daily_fluxes_train_pool |> drop_na(), 
+                    method = "knn",
+                    trControl = caret::trainControl(method = "cv", 
+                                                    number = 60
+                                                    ),
+                    tuneGrid = data.frame(k = c(2, 5, 10, 15, 20, 25, 30, 35, 40, 60, 100)),
+                    metric = "MAE"
+                    )
+
+mod_pool
+eval_model(mod = mod_pool, df_train = daily_fluxes_train_pool, df_test = daily_fluxes_Dav_test)
+
+eval_model(mod = mod_pool, df_train = daily_fluxes_train_pool, df_test = daily_fluxes_Lae_test)
+
+
+
+
+``` 
+*figure 5: Evaluation of GPP knn model fit vs. GPP measurements using pooled data to predict the Davos and Laegern test data*
+
+It seems as if with a pooled training dataset, the R-Squared is quite high for training but the testing isn't really any different from doing it with the separated datasets. This comes potentially from the fact that k = 2 is the optimal model according to the MAE, so it is quite high on the bias side in terms of bias-variance tradeoff. I am not quite sure if that's normal though and there might have just been a mistake in implementation leading to this (or maybe this is normal after all).  
+
+
+## Comparing the the two sites 
+
+#### Get information about the characteristics of the two sites. What are the differences in terms of climate, vegetation, altitude, etc. between the Davos and Laegern sites? Interpret biases of the out-of-sample predictions with a view to the site characteristics.
+
+Davos: 1639 m above sea level
+Laegern: 689 m above sea level
+
+Davos is in the alps, Laegern in the Swiss pleateau
+
+Vegetation: 
+Davos: Evergreen Needleleaf Forest, meaning most trees remain green even in Winter
+Laegern: Mixed Forest without any overly dominant forest type
+
+Annual Temp:
+Davos: 2.8°C
+Laegern: 8.3°C
+
+Annual Precipitation:
+Davos: 1062 mm 
+Laegern: 1100 mm
+
+idk I guess I need to make a graphic comparing the across-site prediction (laegern training data applied to davos test and the other way around) to the measured GPP data with the year on the X-axis (like in re_ml_01) and potentially see that e.g. the Laegern prediction underestimates GPP in winter for davos because of the evergreen trees? 
+
+
+```{r, fig.width = 13,fig.height = 5}
+
+colors1 <- c("GPP Measured" = "black", "Davos Prediction" = "green", "Laegern Prediction" = "red")
+
+yearstart <- daily_fluxes_Dav_test[match(unique(year(daily_fluxes_Dav_test$TIMESTAMP)), year(daily_fluxes_Dav_test$TIMESTAMP)),][,1]
+
+yearstart$TIMESTAMP <- as.numeric(yearstart$TIMESTAMP)
+#select the first date with an obs of every year and then put a line there on the plots as to make it easier to read when the year starts and thus easier to see the results
+
+
+
+ggplot() +
+  geom_point(data = daily_fluxes_Dav_test, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF,  color = "GPP Measured"), alpha = 0.8) +
+  geom_line(data = daily_fluxes_Dav_test, aes(x = TIMESTAMP, y = Dav_fitted,  color = "Davos Prediction"), alpha = 0.5) +
+  geom_line(data = daily_fluxes_Dav_test, aes(x = TIMESTAMP, y = Lae_fitted,  color = "Laegern Prediction"), alpha = 0.5) +
+
+    scale_color_manual(values = colors1) +
+  geom_vline(xintercept = yearstart$TIMESTAMP, color = "black", linewidth = 0.3) + 
+  
+  labs(x = "Year", y = "GPP") +
+  
+  theme(axis.text = element_text(size = 12), axis.title = element_text(size = 15)) + 
+  
+  theme(legend.key.size = unit(1, "cm"), 
+    legend.text = element_text(size = 10), legend.title = element_blank())
+
+#note: the start of year look really weird in the middle due to there only being very little data for 2005
+```
+
+
+In this first graphic about the measured GPP vs. predictions for the Davos test set we can see a few things:
+1) The across-site predictions using the Laegern training data overestimate the GPP by quite a big margin in summer. 
+2) In winter/early spring, the predictions using Laegern training data seem to consistently "go back up" from the winterly low a few weeks earlier than the actual data and Davos predictions 
+
+
+```{r, fig.width = 9,fig.height = 4}
+
+colors1 <- c("GPP Measured" = "black", "Laegern Prediction" = "green", "Laegern Prediction" = "red")
+
+yearstart2 <- daily_fluxes_Lae_test[match(unique(year(daily_fluxes_Lae_test$TIMESTAMP)), year(daily_fluxes_Lae_test$TIMESTAMP)),][,1]
+
+yearstart2$TIMESTAMP <- as.numeric(yearstart2$TIMESTAMP)
+
+
+
+ggplot() +
+  geom_point(data = daily_fluxes_Lae_test, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF,  color = "GPP Measured"), alpha = 0.8) +
+  geom_line(data = daily_fluxes_Lae_test, aes(x = TIMESTAMP, y = Lae_fitted,  color = "Laegern Prediction"), alpha = 0.5) +
+  geom_line(data = daily_fluxes_Lae_test, aes(x = TIMESTAMP, y = Dav_fitted,  color = "Davos Prediction"), alpha = 0.5) +
+
+    scale_color_manual(values = colors1) +
+  geom_vline(xintercept = yearstart2$TIMESTAMP, color = "black", linewidth = 0.3) +
+  
+  labs(x = "Year", y = "GPP") +
+  
+  theme(axis.text = element_text(size = 8), axis.title = element_text(size = 10)) + 
+  
+  theme(legend.key.size = unit(1, "cm"), 
+    legend.text = element_text(size = 8), legend.title = element_blank())
+
+
+```
