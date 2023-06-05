@@ -14,17 +14,18 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, fig.width=4, fi
 ```
 
 ```{r} 
-FLUXNET <-  readr::read_csv("./data/df_for_stepwise_regression.csv")
 library(ggplot2)
 library(tidyverse)
 library(tidyr)
 library(yardstick)
+FLUXNET <-  readr::read_csv("./data/df_for_stepwise_regression.csv")
+
 
 ```
 
 ## Step 1: Evaluation of all bivariate models (single predictor)
 
-Step 1: all bivariate models (single predictor), steps 1-3 of algorithm
+In order to evaluate all single predictor bivariate models, we implement the steps 1-3 of the stepwise forward regression algorithm of the AGDS book. This is done with a loop going through the list of variables and computing a linear regression of the GPP measurements with every other variable being used as a single predictor one by one. 
 
 ```{r}
 models <- list()
@@ -34,7 +35,7 @@ RSQUARED <- c()
 predictors_i <- colnames(FLUXNET)[3:17]
 predictors_i = predictors_i[predictors_i != "GPP_NT_VUT_REF"]
 
-
+#loop doing the linear regression of GPP_NT_VUT_REF and then all other predictors, and then putting these models into the models list
 for (i in 1:length(predictors_i)){ 
   
   models[[i]] <- 
@@ -47,21 +48,25 @@ bestfitting <- models[[which.max(RSQUARED)]]
 bestmodel <- c(predictors_i[which.max(RSQUARED)],
                RSQUARED[which.max(RSQUARED)],
                extractAIC(bestfitting)[2])
-bestmodel
+names(bestmodel) <- (c("variable name", "R Squared", "AIC"))
+
+knitr::kable(bestmodel, caption = "*Table 1: Best single Predictor model and its R-Squared and AIC*")
 
 ```
 
-The best model is the one using PPFD_IN (Incoming photosynthetic photon flux density) as a predictor. The adjusted R-Squared is 0.452, meaning 45.2% of the variability in GPP can be explained by the Regression model with the PPFD variable. 
+The best model is the one using PPFD_IN (Incoming photosynthetic photon flux density) as a single predictor. The adjusted R-Squared is 0.452, meaning 45.2% of the variability in GPP can be explained by the Regression model with the PPFD variable. The AIC is 29'689.5 which is hard to really interpret without putting it in relation to other models. 
 
+### Plots
 
-### plots
-```{r}
+As a next step, we create the correlation plots used to visualize the linear regressions from before. This is yet again done with looping through all variables as single predictors and putting all plots into an originally empty list and then priting said list. 
+
+```{r, echo=FALSE,results='hide',fig.keep='all', fig.width = 2.25, fig.height = 1.75}
 
 plots <- list()
 #empty list for the plots to be put into
 
 
-xlabels <- expression("Air Temperature (°C)", 
+xlabels <- expression("Air Temperature (C)", 
                 paste("Shortwave radiation (W m"^-2, ")"),
                 paste("Longwave radiation (W m"^-2, ")"), 
                 "Vapor Pressure deficit (hPa)", 
@@ -84,26 +89,42 @@ for (i in 1:length(predictors_i)){
   plots[[i]] <- ggplot(
     data = FLUXNET, 
     aes_string(x = predictors_i[i], y = "GPP_NT_VUT_REF")) +
-    geom_point() +
-    geom_smooth(method = "lm", color = "red") + 
+    geom_point(size = 0.4) +
+    geom_smooth(method = "lm", color = "red", size = 0.5) + 
     labs (title = predictors_i[i],
           x = xlabels[i],
-          y =  expression(paste("GPP (", mu,"mol CO"[2], " m"^-2, "s"^-1, ")"))) 
+          y =  expression(paste("GPP (", mu,"mol CO"[2], " m"^-2, "s"^-1, ")"))) +   
+    theme(title = element_text(size = 9), 
+          axis.text = element_text(size = 6), 
+          axis.title = element_text(size = 7)) 
     
 }
+  
+  
 
-cowplot::plot_grid(plots[1], plots[2], ncol = 4)
-plots 
-#on a sidenote, I couldn't get cowplot to work in order to arrange the plots (it always resulted in a blank square), so the plots take up a looot more space than I would've liked :(
+
+
+
+#cowplot::plot_grid(plots, ncol = 4)
+plots
+#on a sidenote, I couldn't get cowplot to work in order to arrange the plots (it always resulted in a blank square), same story with trying to use theme(title = element_text(size = ...)) to change the title size, I just couldn't get it to work
 
 ```
+
+
+*Figure 1: Correlation plots using single predictors to predict GPP values*
+
 
 As can be seen from the summaries as well as the graphics, the best R-Squared is the one for the bivariate model using PPFD_IN (Incoming photosynthetic photon flux density) as a single predictor for the GPP (0.452). This means 45.2% of the variability in GPP can be explained by the Regression model with the PPFD_IN variable.
 
 
 ## Step 2: stepwise forward regression  
+For the complete stepwise forward regression (aka using the entire algorithm from the book), two loops are used: inner one going through all predictors and choosing the best possible model (going by R-Squared), and an outer one which takes these variables from the inner loop and makes a regression using more and more variables every time, and stops doing that once the model with the best AIC is found. 
 
-```{r}
+
+
+
+```{r, message=FALSE, results='hide'}
 
 
 used_var <- list()
@@ -149,9 +170,18 @@ for (i in 1:14){
        break}
   
 }
+```
+
+```{r}
+
 optimal_model <- models1[i-1]
-lapply(optimal_model, summary) 
-AICS[i-1]
+lapply(optimal_model, summary)
+
+```
+*Table 2: summary of optimal multiple linear regression model to predict GPP values, using AIC as a indicator*
+
+```{r}
+knitr::kable(AICS[i-1], caption = "*Table 3: AICS of optimal multiple linear regression model", align = "l")
 
 #optimal model has to be at spot i-1 because the loop goes until the AICS of the model is worse than the previous one, meaning the last model will be slightly worse than the one right before 
 

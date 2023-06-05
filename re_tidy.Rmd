@@ -6,7 +6,7 @@ output: html_document
 
 ## About this file
 
-This Markdown file is for the report exercise entitled *Cleaning data from elevated CO2 experiments* which is part of Chapter 3 (Data wrangling) of the AGDS Course. The goal is turning freely available, nice looking but untidy excel data from a scientific paper into a tidy dataset. 
+This Markdown file is for the report exercise entitled *Cleaning data from elevated CO2 experiments* which is part of Chapter 3 (Data wrangling) of the AGDS Course. The goal is turning freely available, nice looking but untidy excel data from a scientific paper into a tidy dataset, and then aggregate said data and compute log-response ratios from it. The data used is from a paper by van Groenigen et al. about soil organic carbon measurements in experiments. The paper can be found at https://doi.org/10.1126/science.1249534. 
 
 
 
@@ -27,6 +27,8 @@ Carbon <- readr::read_delim("./data/CarbonMeasurements.csv", delim = ";")
 
 #### In R, aggregate data per experiment and calculate the log-response ratio within each experiment.
 
+In the first step, the CSV dataset with the various experiments which we are looking at got cleaned up and made easier to read and use in R.  
+
 To calculate the log-response ratio (RR) for each experiment, take the logarithm of the mean soil organic carbon when exposed to 
 increased CO2 divided by the same soil organic carbon when exposed to mean ambient (low) CO2. This log-response ratio is then appended to the table so each measurement has their respective treatment effect number in the column  "log-response ratio". 
 
@@ -45,7 +47,7 @@ Carbon_agg <- Carbon |>
   group_by(Experiment) |>
   summarise(`log-response ratio` = mean(`log-response ratio`))
 
-knitr::kable(Carbon_agg)
+knitr::kable(Carbon_agg, caption = "*Table 1: Log-response ratios of Carbon Measurements for all individual experiments*")
 
 ```
 The log-response ratio in this case means that the more positive the value, the more of an effect higher ambient CO2 concentration has on soil organic carbon measurements. This means values close to zero or even negative indicate that for that experiment, a higher concentration of CO2 in the air doesn't influence/influences negatively the C concentration in the soil.  
@@ -67,6 +69,9 @@ Carbon_phases <-
   group_by(phase) |>
   summarise(`log-response ratio` = mean(`log-response ratio`))
 
-knitr::kable(Carbon_phases)
+knitr::kable(Carbon_phases, caption = "*Table 2: Log-response ratios of Carbon Measurements for experiments aggregated by duration*")
 ```
-Aggregation across experiment length seems to show that while in early and middle-phase the effect of increased CO2 in the atmosphere is positive on the carbon levels in the soil, this effect turns around when it comes to experiments running for 6 years or more. 
+Aggregation across experiment length seems to show that while in early and middle-phase the effect of increased CO2 in the atmosphere is positive on the carbon levels in the soil, this effect turns around when it comes to experiments running for 6 years or more.
+
+
+Data source: Groenigen, Kees Jan van, Xuan Qi, Craig W. Osenberg, Yiqi Luo, and Bruce A. Hungate. “Faster Decomposition Under Increased Atmospheric CO2 Limits Soil Carbon Storage.” Science 344, no. 6183 (May 2, 2014): 508–9. https://doi.org/10.1126/science.1249534.

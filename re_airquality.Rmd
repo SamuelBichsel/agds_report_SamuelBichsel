@@ -85,9 +85,12 @@ The variables which are being analyzed here are the maximum daily Temperature an
 
 The most important and interesting metrics for the maximum daily Temperature are probably the mean, maximum, and minimum, though the dataset does crucially lack data on daily average or minimum daily temperatures. 
 ``` {r}
-max(airquality$Temp_C)
-min(airquality$Temp_C)
-mean(airquality$Temp_C)
+
+metrics <- data.frame(max(airquality$Temp_C),min(airquality$Temp_C),mean(airquality$Temp_C)
+)
+
+
+knitr::kable(metrics, col.names = c("max", "min", "mean"), caption = "*Table 1: Maximum, Minimum and Mean of the max. daily Temperature data, in °C*")
 ```
 
 
@@ -188,8 +191,8 @@ As can be seen in the plot, using a linear regression to predict the dependent v
 
 ## Interpretation and discussion
 
-#### Interpretation and discussion of your results and hypotheses. The text alone should not exceed one A4 page
+#### Interpretation and discussion of your results and hypotheses. 
 
-The expectation that solar Radiation and Temperature should be closely correlated seems not to be the case in the observed data. This can be seen both visually on the graphs, as well as through the linear Regression with a low R-squared of 0.0761. 
+The expectation that solar Radiation and Temperature should be closely correlated seems not to be the case in the used data of May-October 1973 in New York City. This can be seen both visually on the graphs, as well as through the linear Regression with a low R-squared of 0.0761. Though at least the effect goes into the expected, positive direction.  
 
-There are multiple reasons why this could be: first of all it could be due to inconsistencies, the Solar Radiation is measured between 08:00 and 12:00, whereas the Temperature is for the whole day, as well as being only the maximum Temperature and not the average. Further, other local factors and weather conditions can influence daily Temperatures at the measuring station. 
+There are multiple reasons why this could be: first of all it could be due to inconsistencies, the Solar Radiation is measured between 08:00 and 12:00, whereas the Temperature is for the whole day, as well as being only the maximum Temperature and not the average. Further, other local factors and weather conditions can influence daily Temperatures at the measuring station. These couple of problems with the data structure thus likely make these results inconclusive.   
