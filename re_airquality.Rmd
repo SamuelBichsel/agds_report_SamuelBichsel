@@ -14,6 +14,7 @@ knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
 
 First, the libraries and functions used need to be setup. The functions were copied over from The Applied Geodata Science Book as well as everyones favourite website for this purpose - stackoverflow.com  
+
 ``` {r}
 #library and functions setup 
 airquality <- datasets::airquality
@@ -96,7 +97,7 @@ mean(airquality$Temp_C)
 
 The visualization of the Daily Temperature and Solar Radiation evolution over the 5 months is made by using ggplot. The daily evolution, as well as a biweekly mean (which is calculated using the function for running mean from the AGDS book) is visible for both variables. 
 
-``` {r}
+``` {r, fig.width = 8.5,fig.height = 4, fig.cap = "Figure 1: Maximum daily temperature for May-October 1973 in LaGuardia Airport, New York, NY"}
 #Filter the maximum and Minimum Temperature in the data frame so they can be put onto the plot as points
 TempMax <- airquality %>%
   filter(Temp_C == max(Temp_C))
@@ -119,16 +120,21 @@ ggplot(
   labs(title = "Maximum Daily Temperature, 1973",
        subtitle = "LaGuardia Airport, New York, NY",
        x = "Month", 
-       y = "Temperature (°C)"
+       y = "Temperature (C)"
   ) +
   
   geom_line(aes(date, biweekly_Temp, color = "Biweekly mean")) +
   
   scale_color_manual("",
                      values = c("purple", "black"),
-                     labels = c("Biweekly mean", "Daily"))
+                     labels = c("Biweekly mean", "Daily")) +
+  theme_bw(base_rect_size = 0.8)
 
 
+```
+
+
+``` {r, fig.width = 8.5,fig.height = 4, fig.cap = "Figure 2: Daily solar radiation for May-October 1973 in Central Park, New York, NY"}
 #2 trend in solar radiation
 ggplot(
   data = airquality,
@@ -152,7 +158,8 @@ ggplot(
   
   scale_color_manual("",
                      values = c("orange1", "black"),
-                     labels = c("Biweekly mean", "Daily"))
+                     labels = c("Biweekly mean", "Daily")) +
+  theme_bw(base_rect_size = 0.8)
   
 ```
 
@@ -160,7 +167,7 @@ As can be seen, the Solar Radiation varies quite a bit more across and within th
 
 The two variables are expected to be somewhat positively correlated, as surface Temperature is, in part, dependent on the amount of solar radiation. One way to check for this is a correlation plot including a linear regression and a R-squared correlation coefficient. 
 
-``` {r}
+``` {r, fig.cap = "FIgure 3: Linear correlation of Temperature and Solar Radiation for NYC, May-Oct 1973}
 #3 Correlation plot 
 ggplot(
   data = airquality,
@@ -171,8 +178,8 @@ ggplot(
        subtitle = "New York, NY (1973)",
        x = "Solar Radiation (lang)",
        y = "Temperature(°C)") + 
-  geom_text(x = 172, y = 16.5, label = eq(airquality$Solar.R, airquality$Temp_C), parse = TRUE, size = 3.5)
-  
+  geom_text(x = 172, y = 16.5, label = eq(airquality$Solar.R, airquality$Temp_C), parse = TRUE, size = 3.5) +
+  theme_classic()
 
 
 
