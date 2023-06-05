@@ -13,9 +13,9 @@ This Markdown file is for the report exercise entitled *Cleaning data from eleva
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
 ```
-## load packages
+### load packages
 
-Load the packages that are needed (tidyverse and dplyr), and then read the csv file (note: read_delim had to be used instead of read_csv because excel decided to make the csv with semicolons instead of commas for some obscure reason). 
+Load the packages that are needed (tidyverse and dplyr), and then read the csv file (note: read_delim had to be used instead of read_csv because excel decided to make the csv with semicolons instead of commas). 
 
 ```{r}
 library(tidyverse)
@@ -27,7 +27,8 @@ Carbon <- readr::read_delim("./data/CarbonMeasurements.csv", delim = ";")
 
 #### In R, aggregate data per experiment and calculate the log-response ratio within each experiment.
 
-To calculate the log-response ratio (RR) for each experiment, take the logarithm of the mean increased CO2 divided by the mean ambient CO2. This log-response ratio is then appended to the table so each measurement has their respective treatment effect number in the column  "log-response ratio". 
+To calculate the log-response ratio (RR) for each experiment, take the logarithm of the mean soil organic carbon when exposed to 
+increased CO2 divided by the same soil organic carbon when exposed to mean ambient (low) CO2. This log-response ratio is then appended to the table so each measurement has their respective treatment effect number in the column  "log-response ratio". 
 
 These log-response ratios are then aggregated and averaged (taking the mean) by experiment with the functions "group_by" and "summarise" in a separate dataframe "Carbon_agg". As a last step a table is created with "knitr::kable"
 
@@ -47,6 +48,7 @@ Carbon_agg <- Carbon |>
 knitr::kable(Carbon_agg)
 
 ```
+The log-response ratio in this case means that the more positive the value, the more of an effect higher ambient CO2 concentration has on soil organic carbon measurements. This means values close to zero or even negative indicate that for that experiment, a higher concentration of CO2 in the air doesn't influence/influences negatively the C concentration in the soil.  
 
 ## Step 3
 
@@ -56,7 +58,7 @@ The aggregation by time period accross all experiments of every log-response rat
 
 Note that for the cut at 3 years, the number 2.9 has been used, as otherwise it would include experiments that have been running for 3 years in the category "early phase", whereas it should be in the category "mid-phase". "include.lowest = TRUE" is also added, as otherwise it would disregard all the measurements done at time = 0 in all experiments. 
 
-After that, just like before, the log-response ratios are aggregated using their mean, this time based on the cuts that were added. As a last step, the table is created with the same function "knitr::kable"
+After that, just like before, the log-response ratios are aggregated using their mean, this time based on the cuts that were added.
 
 ```{r} 
 
@@ -66,5 +68,5 @@ Carbon_phases <-
   summarise(`log-response ratio` = mean(`log-response ratio`))
 
 knitr::kable(Carbon_phases)
-
 ```
+Aggregation across experiment length seems to show that while in early and middle-phase the effect of increased CO2 in the atmosphere is positive on the carbon levels in the soil, this effect turns around when it comes to experiments running for 6 years or more. 
