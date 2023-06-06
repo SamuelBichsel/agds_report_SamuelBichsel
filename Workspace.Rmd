@@ -1,0 +1,208 @@
+---
+title: "Report Exercise Chapter 1"
+author: "Samuel Bichsel"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(datasets)
+```
+
+## About this file
+
+This Markdown file is for the report exercise of Chapter 1 of the AGDS course (Getting started). It is about creating an RMarkdown file in a new R project which implements solutions to exercises of that chapter, and describing how the code works. 
+
+## Dimensions of a circle
+
+#### Given the radius of a circle r, write a few lines of code that calculates its area and its circumference. 
+
+First, the radius is attributed a value (here 3)
+```{r}
+r1 <- 3
+```
+
+Then, to calculate the circumference, we take 2 x pi x radius: 
+```{r}
+circ1 <- 2 * pi * r1 
+```
+
+For the area, it's pi x the radius squared:
+```{r}
+area1 <- pi * r1^2
+```
+
+#### Run your code with different values assigned to r
+
+using a different value for r, for example 5, this gives: 
+```{r}
+r2 <- 5
+circ2 <- 2 * pi * r2
+area2 <- pi * r2^2
+```
+
+#### Print the solution as text
+
+With paste, we can combine text within apostrophes with the variables we saved. 
+```{r}
+print(paste("Radius:", r1, "   Circumference:", circ1, "   Area:", area1))
+
+print(paste("Radius:", r2, "   Circumference:", circ2, "   Area:", area2))
+```
+
+## Sequence of numbers
+
+#### Generate a sequence of numbers from 0 and  π  as a vector with length 5
+
+Simply following the advice which we can get from ?seq we get the following: 
+```{r}
+seq(0, pi, length.out = 5)
+```
+
+
+## Gauss sum
+
+#### Sum of all numbers from 1 to 100
+
+Using the base r function sum allows us to do that easily: 
+```{r}
+sum(1:100)
+```
+
+#### Demonstrate Gauss’ trick with vectors in R
+
+Gauss' trick was to just do 50 times 101, since doing 100 + 1, 99 + 2, 98 + 3 etc. until 50 + 51 is equal to 50 x 101. Creating a vector that goes from 1 to 50 and one that goes from 100 to 1, we can recreate exactly that by doing the sum of both vectors, which simply sums up the numbers that are on the same position of both vectors.
+```{r}
+vector1 <- 1:50
+vector2 <- 100:51
+
+vector3 <- vector1 + vector2
+
+#this means that every object is 101
+vector3
+```
+
+Now by simply doing the sum of the vector3, we get the same result as before. 
+```{r}
+sum(vector3)
+```
+
+## Magic trick algorithm 
+
+#### Define a variable named x that contains an integer value and perform the following operations in sequence:
+
+Defining x as 13 as a start:
+```{r}
+x <- 13
+```
+
+#### Redefine x by adding 1
+
+```{r}
+x <- x + 1
+```
+
+#### Double the resulting number, over-writing x
+
+```{r}
+x <- 2 * x
+```
+
+#### Add 4 to x and save the result as x
+
+```{r}
+x <- x + 4
+```
+
+#### Redefine x as half of the previous value of x
+
+```{r}
+x <- x / 2
+```
+
+#### Subtract the originally chosen arbitrary number from x
+
+```{r}
+x <- x - 13
+x
+```
+
+Taking a different arbitrary number: 
+
+```{r}
+x <- 777
+x <- x + 1
+x <- 2 * x
+x <- x + 4
+x <- x / 2
+x <- x - 777
+x
+```
+
+In the end, x is always going to be 3
+
+
+## Vectors
+
+#### Object datasets:river; what is the class and length of the object?
+```{r}
+rivers <- datasets::rivers
+rivers #print it
+
+class(rivers)
+
+length(rivers)
+```
+The class of the dataset "rivers" is numeric, the length 141.
+
+#### Calculate the mean, median, minimum, maximum, and the 33%-quantile across all values
+
+The function names for these are quite intuitive.
+```{r}
+mean(rivers)
+median(rivers)
+min(rivers)
+max(rivers)
+quantile(rivers, 0.33)
+```
+
+## Data frames 
+
+#### Dataset quakes: determine the dimensions of the data frame
+
+
+```{r}
+dim(datasets::quakes)
+
+```
+It has 1000 rows for 5 columns. 
+
+#### Extract the vector of values in the data frame that contain information about the Richter Magnitude
+
+The $ sign allows us to choose a column of that dataframe. 
+```{r}
+Magnitudes <- datasets::quakes$mag
+
+```
+
+#### Determine the value largest value in the vector of event magnitudes
+
+Just using the function max
+```{r}
+max(Magnitudes)
+```
+The highest magnitude is 6.4.
+
+#### Determine the geographic position of the epicenter of the largest event
+
+For that, we have to figure out in what row of the dataframe the highest Magnitude is. From there, we can choose that row and select its geographic location thanks to the columns for longitude and latitude
+
+```{r}
+index <- which.max(Magnitudes) #extracting the row
+
+datasets::quakes$long[index] #longitude
+datasets::quakes$lat[index] #latitude
+```
+The location is at 167.62 O, -15,56 N, which is in the sea in the middle of the Vanuatu archipelago. 
+
+
