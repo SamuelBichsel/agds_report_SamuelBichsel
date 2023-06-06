@@ -12,4 +12,3 @@ out <- cowplot::plot_grid(list_of_plots[[1]], list_of_plots[[2]],
 
 return(out)
 }
-

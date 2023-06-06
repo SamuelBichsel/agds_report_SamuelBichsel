@@ -9,10 +9,10 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE" />
 
 
+<meta name="author" content="Samuel Bichsel" />
 
-<meta name="date" content="2023-03-10" />
 
-<title>Cleaning data from elevated CO2 experiments</title>
+<title>Report Exercise Chapter 3</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -349,9 +349,8 @@ display: none;
 
 
 
-<h1 class="title toc-ignore">Cleaning data from elevated CO2
-experiments</h1>
-<h4 class="date">2023-03-10</h4>
+<h1 class="title toc-ignore">Report Exercise Chapter 3</h1>
+<h4 class="author">Samuel Bichsel</h4>
 
 </div>
 
@@ -362,51 +361,33 @@ experiments</h1>
 data from elevated CO2 experiments</em> which is part of Chapter 3 (Data
 wrangling) of the AGDS Course. The goal is turning freely available,
 nice looking but untidy excel data from a scientific paper into a tidy
-dataset.</p>
-</div>
-<div id="load-packages" class="section level2">
-<h2>load packages</h2>
+dataset, and then aggregate said data and compute log-response ratios
+from it. The data used is from a paper by van Groenigen et al. about
+soil organic carbon measurements in experiments. The paper can be found
+at <a href="https://doi.org/10.1126/science.1249534" class="uri">https://doi.org/10.1126/science.1249534</a>.</p>
+<div id="load-packages" class="section level3">
+<h3>Load packages</h3>
 <p>Load the packages that are needed (tidyverse and dplyr), and then
 read the csv file (note: read_delim had to be used instead of read_csv
-because excel decided to make the csv with semicolons instead of commas
-for some obscure reason).</p>
-<pre class="r"><code>library(tidyverse)</code></pre>
-<pre><code>## Warning: Paket &#39;tidyverse&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## -- Attaching packages --------------------------------------- tidyverse 1.3.2 --
-## v ggplot2 3.4.1     v purrr   1.0.1
-## v tibble  3.1.8     v dplyr   1.1.0
-## v tidyr   1.3.0     v stringr 1.5.0
-## v readr   2.1.4     v forcats 1.0.0</code></pre>
-<pre><code>## Warning: Paket &#39;ggplot2&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;tibble&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;tidyr&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;readr&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;purrr&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;dplyr&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;stringr&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## Warning: Paket &#39;forcats&#39; wurde unter R Version 4.1.3 erstellt</code></pre>
-<pre><code>## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
-## x dplyr::filter() masks stats::filter()
-## x dplyr::lag()    masks stats::lag()</code></pre>
-<pre class="r"><code>library(dplyr)
+because excel decided to make the csv with semicolons instead of
+commas).</p>
+<pre class="r"><code>library(tidyverse)
+library(dplyr)
 Carbon &lt;- readr::read_delim(&quot;./data/CarbonMeasurements.csv&quot;, delim = &quot;;&quot;)</code></pre>
-<pre><code>## Rows: 234 Columns: 12
-## -- Column specification --------------------------------------------------------
-## Delimiter: &quot;;&quot;
-## chr (5): Experiment, Citation, Sample date, Description of data source, Valu...
-## dbl (7): min. Depth (cm), max. Depth (cm), Time (years), mean ambient CO2, m...
-## 
-## i Use `spec()` to retrieve the full column specification for this data.
-## i Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
 </div>
 <div id="step-2" class="section level2">
 <h2>Step 2</h2>
 <div id="in-r-aggregate-data-per-experiment-and-calculate-the-log-response-ratio-within-each-experiment." class="section level4">
 <h4>In R, aggregate data per experiment and calculate the log-response
 ratio within each experiment.</h4>
+<p>In the first step, the CSV dataset with the various experiments which
+we are looking at got cleaned up and made easier to read and use in
+R.</p>
 <p>To calculate the log-response ratio (RR) for each experiment, take
-the logarithm of the mean increased CO2 divided by the mean ambient CO2.
-This log-response ratio is then appended to the table so each
+the logarithm of the mean soil organic carbon when exposed to increased
+CO2 divided by the same soil organic carbon when exposed to mean ambient
+(low) CO2. This log-response ratio is then appended to the table so each
 measurement has their respective treatment effect number in the column
 “log-response ratio”.</p>
 <p>These log-response ratios are then aggregated and averaged (taking
@@ -425,8 +406,10 @@ Carbon_agg &lt;- Carbon |&gt;
   group_by(Experiment) |&gt;
   summarise(`log-response ratio` = mean(`log-response ratio`))
 
-knitr::kable(Carbon_agg)</code></pre>
+knitr::kable(Carbon_agg, caption = &quot;*Table 1: Log-response ratios of Carbon Measurements for all individual experiments*&quot;)</code></pre>
 <table>
+<caption><em>Table 1: Log-response ratios of Carbon Measurements for all
+individual experiments</em></caption>
 <thead>
 <tr class="header">
 <th align="left">Experiment</th>
@@ -648,6 +631,12 @@ knitr::kable(Carbon_agg)</code></pre>
 </tr>
 </tbody>
 </table>
+<p>The log-response ratio in this case means that the more positive the
+value, the more of an effect higher ambient CO2 concentration has on
+soil organic carbon measurements. This means values close to zero or
+even negative indicate that for that experiment, a higher concentration
+of CO2 in the air doesn’t influence/influences negatively the C
+concentration in the soil.</p>
 </div>
 </div>
 <div id="step-3" class="section level2">
@@ -673,15 +662,16 @@ category “mid-phase”. “include.lowest = TRUE” is also added, as
 otherwise it would disregard all the measurements done at time = 0 in
 all experiments.</p>
 <p>After that, just like before, the log-response ratios are aggregated
-using their mean, this time based on the cuts that were added. As a last
-step, the table is created with the same function “knitr::kable”</p>
+using their mean, this time based on the cuts that were added.</p>
 <pre class="r"><code>Carbon_phases &lt;-
   Carbon %&gt;% mutate(phase = cut(`Time (years)`, c(0, 2.9, 6, Inf), labels = c(&quot;early phase&quot;, &quot;mid-phase&quot;, &quot;late phase&quot;),   include.lowest = TRUE)) %&gt;%
   group_by(phase) |&gt;
   summarise(`log-response ratio` = mean(`log-response ratio`))
 
-knitr::kable(Carbon_phases)</code></pre>
+knitr::kable(Carbon_phases, caption = &quot;*Table 2: Log-response ratios of Carbon Measurements for experiments aggregated by duration*&quot;)</code></pre>
 <table>
+<caption><em>Table 2: Log-response ratios of Carbon Measurements for
+experiments aggregated by duration</em></caption>
 <thead>
 <tr class="header">
 <th align="left">phase</th>
@@ -703,6 +693,14 @@ knitr::kable(Carbon_phases)</code></pre>
 </tr>
 </tbody>
 </table>
+<p>Aggregation across experiment length seems to show that while in
+early and middle-phase the effect of increased CO2 in the atmosphere is
+positive on the carbon levels in the soil, this effect turns around when
+it comes to experiments running for 6 years or more.</p>
+<p>Data source: Groenigen, Kees Jan van, Xuan Qi, Craig W. Osenberg,
+Yiqi Luo, and Bruce A. Hungate. “Faster Decomposition Under Increased
+Atmospheric CO2 Limits Soil Carbon Storage.” Science 344, no. 6183 (May
+2, 2014): 508–9. <a href="https://doi.org/10.1126/science.1249534" class="uri">https://doi.org/10.1126/science.1249534</a>.</p>
 </div>
 </div>
 

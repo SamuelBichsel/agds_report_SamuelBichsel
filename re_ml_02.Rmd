@@ -21,7 +21,8 @@ library(cowplot)
 
 
 ## Setup 
-Setup like said in the script, except use prop = 0.8 to keep 20% of the data for testing purposes. 
+
+Setup like said in the book, except use prop = 0.8 to keep 20% of the data for testing purposes. 
 ```{r}
 
 #make the data wrangling part be a function so I can apply it to both datasets without using way too much code. Yes I am aware this is not very nice looking code and could have been done more optimally but if I can be honest pipe operators confuse me for some reason so I just did it the fastest way I could come up with 
@@ -102,7 +103,7 @@ pp_Lae <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F,
 
 ```
 
-tuning and selecting k
+For tuning and selecting k, we use trainControl(method = "cv") to enable resampling and going through different values of k in order to find the best possible model.
 
 ```{r}
 
@@ -131,13 +132,15 @@ mod_Dav
 mod_Lae
 
 ```
-using MAE as a metric to tune the k, the best values are k = 25 for the Models of Davos and Laegern respectively. 
+Using MAE as a metric to tune the k, the best values are k = 25 for the Models of Davos and Laegern respectively. 
 
 
 
 ## Evaluate models 
 
 #### Compare within-site predictions and across-site predictions on the test set for both sites, considering different metrics.
+
+Just like for the exercises of the previous chapter, we use the function eval_model to compare the models. Since there are 2 locations with training and testing data for each, this gives 4 different combinations of training and testing (two within-site, and two across-site predictions).
 
 ```{r}
 source("./eval_model.R")
@@ -150,7 +153,7 @@ daily_fluxes_Dav_test <- daily_fluxes_Dav_test |>
 daily_fluxes_Dav_test$Dav_fitted <- predict(mod_Dav, newdata = daily_fluxes_Dav_test)
 
 daily_fluxes_Dav_test$Lae_fitted <- predict(mod_Lae, newdata = daily_fluxes_Dav_test)
-#idk if that's correct
+
 
 
 daily_fluxes_Lae_test <- daily_fluxes_Lae_test |> 
@@ -164,49 +167,45 @@ daily_fluxes_Lae_test$Dav_fitted <- predict(mod_Dav, newdata = daily_fluxes_Lae_
 ```
 
 #### Davos training, Davos testing set
-```{r}
+```{r, fig.cap = "*Figure 1: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*"}
 eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Dav_test)
 
-daily_fluxes_Dav_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted)
+knitr::kable(daily_fluxes_Dav_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 1: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
 
-#need to figure out what comes where to give out the right RSQ and RMSE. Otherwise I think I'm fine in this part? idk. Maybe the caret::train giving me the mod_Dav could be wrong but shouldn't be. Not sure. I rly wanna wrap that shit up tmrw but i don't think I will ;DDDDDDDDDDDDDDDDDDDDD 
 ```
-*figure 1: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*
 
 #### Davos training, Laegern testing set
-```{r}
+```{r, fig.cap = "*Figure 2: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*"}
 eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Lae_test)
 
-daily_fluxes_Lae_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted)
-
+knitr::kable(daily_fluxes_Lae_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 2: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*")
 
 ```
-*figure 2: Evaluation of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*
 
 
 #### Lagern training, Laegern testing set
-```{r}
+```{r, fig.cap = "*figure 3: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*"}
 eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Lae_test)
 
-daily_fluxes_Lae_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted)
+knitr::kable(daily_fluxes_Lae_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 3: Metrics of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*")
 
 ```
-*figure 3: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*
+
 
 
 #### Laegern training, Davos testing set
-```{r}
+```{r, fig.cap = "*Figure 4: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Davos test set*"}
 eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Dav_test)
 
-daily_fluxes_Dav_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted)
+knitr::kable(daily_fluxes_Dav_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 4: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
 
 
 ```
-*figure 4: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Davos test set*
+
 
 
 The results for these across-site model predictions aren't too bad, but definitely below the within-site, with all 3 metrics being slightly worse. 
@@ -216,9 +215,9 @@ The results for these across-site model predictions aren't too bad, but definite
 
 #### Train a single model with training data pooled from both sites and predict with this single model on the test data of both sites
 
+With the pooling of the Laegern and Davos datasets, there also needs to be a new training model (with caret::train) mod_pool. The procedure is the same as for the previous datasets.
 
-
-```{r}
+```{r, fig.cap = "*Figure 5: Evaluation of GPP knn model fit vs. GPP measurements using pooled data to predict the Davos test data*"}
 # pool data
 #before being able to pool the data, I need to drop the columns that don't appear in both as otherwise I cannot combine the dataframes
 daily_fluxes_Dav_train <- daily_fluxes_Dav_train[!(colnames(daily_fluxes_Dav_train)) == "P_F"]
@@ -247,14 +246,15 @@ mod_pool <- caret::train(pp_pool,
 
 mod_pool
 eval_model(mod = mod_pool, df_train = daily_fluxes_train_pool, df_test = daily_fluxes_Dav_test)
+```
 
+
+```{r, fig.cap = "*Figure 6: Evaluation of GPP knn model fit vs. GPP measurements using pooled data to predict the Davos*"}
 eval_model(mod = mod_pool, df_train = daily_fluxes_train_pool, df_test = daily_fluxes_Lae_test)
 
 
-
-
 ``` 
-*figure 5: Evaluation of GPP knn model fit vs. GPP measurements using pooled data to predict the Davos and Laegern test data*
+
 
 It seems as if with a pooled training dataset, the R-Squared is quite high for training but the testing isn't really any different from doing it with the separated datasets. This comes potentially from the fact that k = 2 is the optimal model according to the MAE, so it is quite high on the bias side in terms of bias-variance tradeoff. I am not quite sure if that's normal though and there might have just been a mistake in implementation leading to this (or maybe this is normal after all).  
 
@@ -280,12 +280,11 @@ Annual Precipitation:
 Davos: 1062 mm 
 Laegern: 1100 mm
 
-idk I guess I need to make a graphic comparing the across-site prediction (laegern training data applied to davos test and the other way around) to the measured GPP data with the year on the X-axis (like in re_ml_01) and potentially see that e.g. the Laegern prediction underestimates GPP in winter for davos because of the evergreen trees? 
+To compare the out.of-sample predictions of the two sites, we once again turn to temporal variations of fits vs. GPP measurements. To both sites measurements we compare the within-site and across-site predictions, and hope to find some consistent differences in the predictions that could be explained by the differences in the site characteristics.
 
+```{r, fig.width = 13,fig.height = 5, fig.cap = "*Figure 5: Time variation for the site of Davos of measured GPP and precictions using both sites training data*"}
 
-```{r, fig.width = 13,fig.height = 5}
-
-colors1 <- c("GPP Measured" = "black", "Davos Prediction" = "green", "Laegern Prediction" = "red")
+colors1 <- c("GPP Measured" = "black", "Davos Prediction" = "#e41d1d", "Laegern Prediction" = "#357cbc")
 
 yearstart <- daily_fluxes_Dav_test[match(unique(year(daily_fluxes_Dav_test$TIMESTAMP)), year(daily_fluxes_Dav_test$TIMESTAMP)),][,1]
 
@@ -315,14 +314,17 @@ ggplot() +
 
 In this first graphic about the measured GPP vs. predictions for the Davos test set we can see a few things:
 1) The across-site predictions using the Laegern training data overestimate the GPP by quite a big margin in summer. 
-2) In winter/early spring, the predictions using Laegern training data seem to consistently "go back up" from the winterly low a few weeks earlier than the actual data and Davos predictions 
+2) In winter/early spring, the predictions using Laegern training data seem to consistently "go back up" from the winterly low a few weeks earlier than the actual data and Davos predictions. 
+
+These diffrences could, in part, be due to the differences in vegetation, as with similar Temperature, Radiation etc. mixed forest with more deciduous trees may have a greater GPP than full evergreen needleleaf forests.   
 
 
-```{r, fig.width = 9,fig.height = 4}
+```{r, fig.width = 9,fig.height = 4, fig.cap = "*Figure 6: Time variation for the site of Davos of measured GPP and precictions using both sites training data*"}
 
-colors1 <- c("GPP Measured" = "black", "Laegern Prediction" = "green", "Laegern Prediction" = "red")
+colors1 <- c("GPP Measured" = "black", "Laegern Prediction" = "#357cbc", "Davos Prediction" = "#e41d1d")
 
 yearstart2 <- daily_fluxes_Lae_test[match(unique(year(daily_fluxes_Lae_test$TIMESTAMP)), year(daily_fluxes_Lae_test$TIMESTAMP)),][,1]
+
 
 yearstart2$TIMESTAMP <- as.numeric(yearstart2$TIMESTAMP)
 
@@ -346,5 +348,4 @@ ggplot() +
 
 ```
 
-
-hewwwooo :3 haiiiiiiiiiiiii ^_^ heyyyyyy ~_^ (github rizz) 
+When looking at the predictions onto the Laegern dataset, we can come to the same conclusions: the Laegern predictions (as well as the measurements) go way above the predictions using Davos training data in summer, indicating that the gross primary production is higher in Laegern than in Davos in summer even when every external factor is kept even. Without further research, it is hard to make any clear call whether or not this is due to the forest type or if other factors play more of a role in shaping these differences. 
