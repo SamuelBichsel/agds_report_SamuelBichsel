@@ -1,0 +1,402 @@
+---
+title: "Report Exercise Chapter 9"
+author: "Samuel Bichsel"
+output:
+  html_document:
+    toc: true
+---
+
+
+## About this file
+
+This Markdown file is for the report exercise of Chapter 9 (Supervised Machine learning I) of the AGDS Course. The exercise mostly centers around k-nearest-neighbors models, how they compare to linear regression when predicting GPP data by splitting data into training and test-datasets, and what role the k (number of neighbors) has on the models and how tuning that number influences modelling. This is done in part through visualization and metrics like RMSE and MAE to calculate the goodness of the models and analyze their bias-variance tradeoff.
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE)
+library(lubridate)
+library(dplyr)
+library(tidyverse)
+library(recipes)
+library(caret)
+library(cowplot)
+```
+
+
+## Comparison of the linear regression and KNN models
+
+### 1 evaluating KNN and linear regression
+
+#### Adopt the code from the Chapter for fitting and evaluating the linear regression model and the KNN
+
+First, we sort and clean the data.  
+```{r}
+daily_fluxes <-  readr::read_csv("./data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv") |>
+
+ # select only the variables we are interested in
+  dplyr::select(TIMESTAMP,
+                GPP_NT_VUT_REF,    # the target
+                ends_with("_QC"),  # quality control info
+                ends_with("_F"),   # includes all all meteorological covariates
+                -contains("JSB")   # weird useless variable
+                ) |>
+
+  # convert to a nice date object
+  dplyr::mutate(TIMESTAMP = ymd(TIMESTAMP)) |>
+
+  # set all -9999 to NA
+  dplyr::mutate(across(where(is.numeric), ~na_if(., -9999))) |> 
+  
+  # retain only data based on >=80% good-quality measurements
+  # overwrite bad data with NA (not dropping rows)
+  dplyr::mutate(GPP_NT_VUT_REF = ifelse(NEE_VUT_REF_QC < 0.8, NA, GPP_NT_VUT_REF),
+                TA_F           = ifelse(TA_F_QC        < 0.8, NA, TA_F),
+                SW_IN_F        = ifelse(SW_IN_F_QC     < 0.8, NA, SW_IN_F),
+                LW_IN_F        = ifelse(LW_IN_F_QC     < 0.8, NA, LW_IN_F),
+                VPD_F          = ifelse(VPD_F_QC       < 0.8, NA, VPD_F),
+                PA_F           = ifelse(PA_F_QC        < 0.8, NA, PA_F),
+                P_F            = ifelse(P_F_QC         < 0.8, NA, P_F),
+                WS_F           = ifelse(WS_F_QC        < 0.8, NA, WS_F)) |> 
+
+  # drop QC variables (no longer needed)
+  dplyr::select(-ends_with("_QC"))
+
+```
+
+Then comes data-splitting and training.
+```{r}
+# Data splitting
+set.seed(1982)  
+daily_fluxes <- daily_fluxes[!(colnames(daily_fluxes)) == "LW_IN_F"]
+#due to the high amount of NA values in LW_IN_F, and the according to the script is a priori not critical for GPP predictions, we drop this variable. I thought the things done further down with the recipes would fix that by not using that variable in the model but for some reason it didn't work so I do this here removing it by hand 
+
+split <- rsample::initial_split(daily_fluxes, prop = 0.7, strata = "VPD_F")
+daily_fluxes_train <- rsample::training(split)
+
+daily_fluxes_test <- rsample::testing(split)
+
+# Model and pre-processing formulation, use all variables but LW_IN_F
+pp <- recipes::recipe(GPP_NT_VUT_REF ~ SW_IN_F + VPD_F + TA_F, 
+                      data = daily_fluxes_train |> drop_na()) |> 
+  recipes::step_BoxCox(all_predictors()) |> 
+  recipes::step_center(all_numeric(), -all_outcomes()) |>
+  recipes::step_scale(all_numeric(), -all_outcomes())
+
+# Fit linear regression model
+mod_lm <- caret::train(
+  pp, 
+  data = daily_fluxes_train |> drop_na(), 
+  method = "lm",
+  trControl = caret::trainControl(method = "none"),
+  metric = "RMSE"
+)
+summary(mod_lm)
+# Fit KNN model
+mod_knn <- caret::train(
+  pp, 
+  data = daily_fluxes_train |> drop_na(), 
+  method = "knn",
+  trControl = caret::trainControl(method = "none"),
+  tuneGrid = data.frame(k = 8),
+  metric = "RMSE"
+)
+#
+```
+
+The plot and evaluation of the linear regression model: 
+```{r, fig.cap = "*Figure 1: Evaluation of linear regression model fit vs. GPP measurements*"}
+source("./eval_model.R")
+
+#linear regression model
+eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+```
+The training and test models are extremely similar (basically identical actually), meaning the trained model does well when it comes to predicting unseen training data. 
+
+Doing the same for the k-nearest neighbor model:
+```{r, fig.cap = "*Figure 2: Evaluation of k-nearest-neighbor model fit vs. GPP measurements*"}
+# KNN 
+ eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
+```
+
+The R2 and RMSE are better than for the linear regression model, though this time there is a slightly bigger difference in terms of how the model performs on training and test data, but it remains good in terms of model generalisability. 
+
+```{r, include=FALSE}
+#Do the thing that is within the function in eval_model so I can have the fits for the other exercises, since for reasons I do not comprehend due to my weak understanding of programming, the fits simply do not get appended to the dataframes when simply running eval_model (and maybe that's normal).
+
+
+#for the training data
+daily_fluxes_train <- daily_fluxes_train |> 
+    drop_na()
+
+daily_fluxes_train$lm_fitted <- predict(mod_lm, newdata = daily_fluxes_train)
+
+  daily_fluxes_train$knn_fitted <- predict(mod_knn, newdata = daily_fluxes_train)
+
+#for the test data
+daily_fluxes_test <- daily_fluxes_test |> 
+    drop_na()
+
+daily_fluxes_test$lm_fitted <- predict(mod_lm, newdata = daily_fluxes_test)
+
+
+daily_fluxes_test$knn_fitted <- predict(mod_knn, newdata = daily_fluxes_test)
+  
+
+
+# combining the training and test data to prepare for ex.3  
+  
+lm_fit_df <- data.frame(
+  c(daily_fluxes_train$TIMESTAMP, daily_fluxes_test$TIMESTAMP), 
+  c(daily_fluxes_train$lm_fitted, daily_fluxes_test$lm_fitted))
+
+names(lm_fit_df) <- c("TIMESTAMP", "fitted")
+
+
+KNN_fit_df <- data.frame(
+  c(daily_fluxes_train$TIMESTAMP, daily_fluxes_test$TIMESTAMP), 
+  c(daily_fluxes_train$knn_fitted, daily_fluxes_test$knn_fitted))
+
+names(KNN_fit_df) <- c("TIMESTAMP", "fitted")
+
+```
+
+
+### 2 Interpret  observed differences in the context of the bias-variance trade-off
+
+#### 2.1 Why is the difference between the evaluation on the training and the test set larger for the KNN model than for the linear regression model?
+
+The KNN model could be slightly over- or underfitting for the training data, meaning when applying the model that works for the training data onto the testing data, it is a worse fit due to the slight "wiggle" that the line has. The lm on the other hand is just a fully straight line, which means it doesn't fit as well in general but at the same time differences between training and testing data do not influence the RMSE much. 
+
+
+#### 2.2 Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
+
+Because it is more flexible than "just a straight line" which is the lm. 
+
+
+#### 2.3 How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
+
+Linear Regressions have a high bias, as they are not affected by the noise in observations, but its predictions are further away from the observations (just like model poly1 in the chapter) because it oversimplifies the model. KNN can be low bias and high variance when using a k which is too small, or high bias and low variance when using a k which is too big. 
+
+
+### 3 Visualizing 
+
+#### Visualise temporal variations of observed and modelled GPP for both models, covering all available dates.
+
+This first plot is about the full temporal variation for both models and the measured variable, using training as well as testing data.  
+```{r, fig.width = 20,fig.height = 11, fig.cap = "*Figure 3: Temporal variations of observed (black) and modelled GPP with KNN (red) and linear regression (blue) for the period 1997-2014*"}
+
+colors1 <- c("GPP Measured" = "black", "Linear fit" = "#357cbc", "KNN fit" = "#e41d1d")
+
+
+ggplot() +
+  geom_point(data = daily_fluxes, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF,  color = "GPP Measured"), alpha = 0.8, size = 1.8) +
+  geom_line(data = lm_fit_df, aes(x = TIMESTAMP, y = fitted,  color = "Linear fit"), alpha = 0.8, size = 1.2) +
+  geom_line(data = KNN_fit_df, aes(x = TIMESTAMP, y = fitted,  color = "KNN fit"), alpha = 0.5, size = 1.1) +
+
+    scale_color_manual(values = colors1) +
+   
+  labs(x = "Year", y = "GPP") +
+  
+  theme(axis.text = element_text(size = 20), axis.title = element_text(size = 30)) + 
+  
+  theme(legend.key.size = unit(2, "cm"), 
+    legend.text = element_text(size = 20), legend.title = element_blank()) 
+  
+```
+
+```{r, fig.width = 12, fig.height = 8, fig.cap= "*Figure 4: Temporal variations of observed (black) and modelled GPP with KNN (red) and linear regression (blue) for the period 1997-2014, separated by training and testing data*"}
+
+# for training datasets only 
+plot1 <- ggplot() +
+  geom_point(data = daily_fluxes_train, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF,  color = "GPP Measured"), alpha = 0.8, size = 0.7) +
+  geom_line(data = daily_fluxes_train, aes(x = TIMESTAMP, y = lm_fitted,  color = "Linear fit"), alpha = 0.8, size = 0.6) +
+  geom_line(data = daily_fluxes_train, aes(x = TIMESTAMP, y = knn_fitted,  color = "KNN fit"), alpha = 0.5, size = 0.5) +
+
+    scale_color_manual(values = colors1) +
+   
+  labs(title = "Training data", x = "Year", y = "GPP") +
+  
+  theme(axis.text = element_text(size = 8), axis.title = element_text(size = 9)) + 
+  
+  theme(legend.key.size = unit(0.5, "cm"), 
+    legend.text = element_text(size = 6), legend.title = element_blank()) 
+
+
+#for testing datasets only
+plot2 <- ggplot() +
+  geom_point(data = daily_fluxes_test, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF,  color = "GPP Measured"), alpha = 0.8, size = 0.7) +
+  geom_line(data = daily_fluxes_test, aes(x = TIMESTAMP, y = lm_fitted,  color = "Linear fit"), alpha = 0.8, size = 0.6) +
+  geom_line(data = daily_fluxes_test, aes(x = TIMESTAMP, y = knn_fitted,  color = "KNN fit"), alpha = 0.5, size = 0.5) +
+
+    scale_color_manual(values = colors1) +
+   
+  labs(title = "Testing data", x = "Year", y = "GPP") +
+  
+  theme(axis.text = element_text(size = 8), axis.title = element_text(size = 12)) + 
+  
+  theme(legend.key.size = unit(1.2, "cm"), 
+    legend.text = element_text(size = 8), legend.title = element_blank())
+
+plot_grid(plot1, plot2, nrow = 2)
+```
+It is visually quite hard to determine any clear trends through these visualizations. It does seem like the linear model quite consistently go slightly further in the extremes than the knn (on all three graphics the blue lines go further up and down than the red lines), but are still far from being able to predict the actual extreme GPP values. 
+
+ 
+ 
+
+## The role of k
+
+### 1 R2 and MAE depending on k
+
+#### Based on your understanding of KNN (and without running code), state a hypothesis for how the  R2 and the MAE evaluated on the test and on the training set would change for k approaching 1 and for k approaching N (the number of observations in the data). Explain your hypothesis, referring to the bias-variance trade-off.
+
+k = 1 would mean that the line would run through all the training observation, leading to an R2 of 1.00 for the training data, but it would very likely have a bad R2 as well as mean error when applying to the testing dataset (overfitting, high variance). 
+
+k = N means a too generalized model, which should perform somewhat poorly in both R2 and MAE, and values for training and test models should be close each other (underfitting, high bias) 
+
+
+### 2 Test different values for k 
+
+#### Write code that splits the data into a training and a test set and repeats model fitting and evaluation for different values for  k. Visualise results, showing model generalisability as a function of model complexity.
+
+The code to test different values of k is best done with a loop that goes through the different values of k we want to examine and does the same training and testing as before, but with every k. With the same principle, we can create correlation plots as well as plots for temporal variation.  
+```{r}
+
+
+#first the loop
+plots <- list()
+moreplots <- list()
+different_ks <- c(1, 2, 5, 8, 15, 50, 150, 300)
+knn_diff_k <- list()
+all_models <- list()
+
+for (i in 1:length(different_ks)){
+  knn_diff_k[[i]] <- caret::train(
+    pp, 
+    data = daily_fluxes_train |> drop_na(), 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = different_ks[i]),
+    metric = "RMSE")
+  all_models[[i]] <- eval_model(knn_diff_k[[i]], daily_fluxes_train, daily_fluxes_test) 
+  
+  daily_fluxes_train$knn_fitted <- predict(knn_diff_k[[i]], newdata = daily_fluxes_train)
+  
+  plots[[i]] <- ggdraw(all_models[[i]]) + draw_label(paste("k =", different_ks[i]), x = 0.45, y = 0.96, color = 'red') + 
+    labs(x = "year", y = "GPP")
+
+  moreplots[[i]] <- ggplot() +
+      geom_point(data = daily_fluxes_train, aes(x = TIMESTAMP, y = GPP_NT_VUT_REF),  color = 'black', alpha = 0.5) +
+  geom_point(data = daily_fluxes_train, aes(x = TIMESTAMP, y = knn_fitted),  color = '#e41d1d', alpha = 0.5) +
+        labs(x = "year", y = "GPP")
+    
+}
+
+```
+
+
+```{r, fig.width = 10,fig.height = 18, fig.cap = "*Figure 5: GPP vs. knn model fit and evaluation on both training and test sets for 8 different values on k*"}
+#Due to cowplot not working when directly writing it directly into the RMarkdown, I put the graphics together in a function plots_draw in a separate file plot_helper.R which will be in the git as well. 
+
+source("./plot_helper.R")
+plots_draw(plots)
+```
+
+
+These plots are done to compare test and train model fits with the actual GPP measurements, which is done with the same eval_model function as before. With k = 1 it's very visible how GPP and fit are exactly the same for the train graphic (except the few points where GPP could not be predicted due to NA values) but when comparing it to the test dataset, it is all over the place, signifying an overfitting onto the training dataset and thus low generalization of the fit.
+
+An interesting feature of the plots with higher values for k is the way the cloud of points becomes sort of "flat" at the top and bottom, meaning the fitted values don't go above a certain threshold. This is due to how, when using 300 neighbors, the fit is basically unable to approximate outliers/more extreme values as more values being taken into account means the fitted values get closer to the average, and if pushed to the extreme using k = n (number of observations), the fitted values would just be a flat line at the level of the average observation.  
+
+The RMSE and R-Squared for testing and training data get increasingly closer to each other with higher values of k, and the values for testing data are pretty similar for all values of k between 5 and 300 that are examined here.
+
+```{r, fig.cap = "*Figure 6: Temporal variation of measured GPP vs. knn model fit for both training and test sets for 8 different values on k (1, 2, 5, 8, 15, 50, 150 and 300)*", fig.width = 15, fig.height = 12}
+#plots 
+ 
+plots_draw(moreplots) 
+#for reasons, the titles on these graphs simply didn't work. 
+```
+The same things can be seen on plots for temporal variation of the GPP: the fitted values with k = 1 are exactly the same as for the measurements, whereas k = 300 gives a kind of wave that has close to the same extreme values for every summer and winter. These two things are clear signs of over- and underfitting.
+
+
+The last part of the question is about the mean absolute error (MAE). Computing that value in itself is fairly simple thanks to thhe yardstick function "metrics", but to apply it to different values of k we need to use a function (in order to make it more convenient) as well as a loop.
+```{r}
+
+#function to determine MAE based on k 
+compute_MAE <- function(k){
+  knn_diff_k <- caret::train(
+    pp, 
+    data = daily_fluxes_train |> drop_na(), 
+    method = "knn",
+    trControl = caret::trainControl(method = "none"),
+    tuneGrid = data.frame(k = k),
+    metric = "RMSE")
+  
+  daily_fluxes_test$fitted <- predict(knn_diff_k, newdata = daily_fluxes_test)
+  
+  metrics_test <- daily_fluxes_test |> 
+    yardstick::metrics(GPP_NT_VUT_REF, fitted)
+  
+  MAE_knn_test <- metrics_test |> 
+    filter(.metric == "mae") |> 
+    pull(.estimate)
+  
+  return(MAE_knn_test)
+}
+
+
+
+k_numbers <- (c("1", "2", "5", "8", "15", "50", "150", "300"))
+
+
+MAE_table <- c(compute_MAE(different_ks[1]), 
+  compute_MAE(different_ks[2]),
+  compute_MAE(different_ks[3]),
+  compute_MAE(different_ks[4]),
+  compute_MAE(different_ks[5]),
+  compute_MAE(different_ks[6]),
+  compute_MAE(different_ks[7]),
+  compute_MAE(different_ks[8]))
+
+names(MAE_table) <- k_numbers
+
+
+knitr::kable(MAE_table, caption = "*Table 1: Mean absolute error on the knn model for 8 different values of k*")
+
+ 
+```
+The MAE values go down for a while with increasing k, then go back up after 50. Finding the optimal k for this model is the objective of the next exercise question. 
+
+
+### 3 optimal k
+
+#### Is there an “optimal” k in terms of model generalisability? Edit your code to determine an optimal k.
+
+Just like in the previous exercise, we use the mean absolute error (MAE) on the test dataset, determining it for every k between 0 and 100. This is done via looping and using the same function "compute_MAE" that was used for the last question. The MAEs are then plotted. 
+
+
+```{r, fig.cap = "*Figure 7: Mean absolute error of fit compared to measurements on the test set for k between 1 and 100*"}
+all_MAE <- c()
+
+for (i in 1:100){
+  all_MAE[i] <- compute_MAE(i)
+  
+}
+
+min(all_MAE)
+which.min(all_MAE)
+
+
+
+ggplot(
+  data = data.frame(all_MAE), aes(x = 1:100, y = all_MAE)) + 
+  geom_point() +
+  geom_point(aes(x = which.min(all_MAE),
+                 y =  min(all_MAE), color = 'red')) + 
+  theme(legend.position = "none") +
+  labs(y = "Mean absolute error", x = "k") 
+
+
+```
+
+
+Using the MAE as a metric and the test-datasets for various k, it seems as k = 32 (the red point) is the optimal value for highest generalisability, as it has the lowest Mean Absolute Error (1.104253) for the test data. However, it is hard to come to a simple conclusion using just this somewhat rigid dataset without any re-sampling or other metric. 
