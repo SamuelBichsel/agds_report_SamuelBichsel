@@ -11,6 +11,8 @@ This Markdown file is for the report exercise of Chapter 8 (Regression and Class
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning=FALSE, message=FALSE, fig.width=4, fig.height=3)
 
+
+
 ```
 
 ```{r} 
