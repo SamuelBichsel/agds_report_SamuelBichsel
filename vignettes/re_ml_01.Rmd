@@ -389,7 +389,7 @@ which.min(all_MAE)
 
 
 ggplot(
-  data = data.frame(all_MAE), aes(x = 1:100, y = all_MAE)) + 
+  data = data.frame(all_MAE), aes(x = 1:length(all_MAE), y = all_MAE)) + 
   geom_point() +
   geom_point(aes(x = which.min(all_MAE),
                  y =  min(all_MAE), color = 'red')) + 
