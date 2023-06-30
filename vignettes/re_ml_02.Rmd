@@ -60,9 +60,9 @@ data |>
 
 
 
-daily_fluxes_Dav <- wrangle(daily_fluxes_Dav <- readr::read_csv("./data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv"))  
+daily_fluxes_Dav <- wrangle(daily_fluxes_Dav <- readr::read_csv(".././data/FLX_CH-Dav_FLUXNET2015_FULLSET_DD_1997-2014_1-3.csv"))  
 
-daily_fluxes_Lae <- wrangle(daily_fluxes_Lae <- readr::read_csv("./data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv"))
+daily_fluxes_Lae <- wrangle(daily_fluxes_Lae <- readr::read_csv(".././data/FLX_CH-Lae_FLUXNET2015_FULLSET_DD_2004-2014_1-4.csv"))
   
 
 
@@ -143,7 +143,7 @@ Using MAE as a metric to tune the k, the best values are k = 25 for the Models o
 Just like for the exercises of the previous chapter, we use the function eval_model to compare the models. Since there are 2 locations with training and testing data for each, this gives 4 different combinations of training and testing (two within-site, and two across-site predictions).
 
 ```{r}
-source("./eval_model.R")
+source(".././R/eval_model.R")
 
 #adding the fitted values by hand since eval_model doesn't do that for me
 

@@ -20,7 +20,7 @@ library(ggplot2)
 library(tidyverse)
 library(tidyr)
 library(yardstick)
-FLUXNET <-  readr::read_csv("./data/df_for_stepwise_regression.csv")
+FLUXNET <-  readr::read_csv(".././data/df_for_stepwise_regression.csv")
 
 
 ```

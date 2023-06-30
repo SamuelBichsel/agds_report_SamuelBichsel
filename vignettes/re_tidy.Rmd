@@ -20,7 +20,7 @@ Load the packages that are needed (tidyverse and dplyr), and then read the csv f
 ```{r}
 library(tidyverse)
 library(dplyr)
-Carbon <- readr::read_delim("./data/CarbonMeasurements.csv", delim = ";")
+Carbon <- readr::read_delim(".././data/CarbonMeasurements.csv", delim = ";")
 ```
 
 ##  Step 2
