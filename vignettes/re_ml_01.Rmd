@@ -171,7 +171,7 @@ The KNN model could be slightly over- or underfitting for the training data, mea
 
 #### 2.2 Why is the does the evaluation on the test set indicate a better model performance of the KNN model than the linear regression model?
 
-Because it is more flexible than "just a straight line" which is the lm. 
+Because the linear regression model lacks flexibility to predict data points that are not linearly correlated to the predictors, while knn can by using neighboring points. 
 
 
 #### 2.3 How would you position the KNN and the linear regression model along the spectrum of the bias-variance trade-off?
