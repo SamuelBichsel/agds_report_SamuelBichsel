@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+<<<<<<< HEAD;;;;;;;;;;;
 ﻿Experiment;Citation;min. Depth (cm);max. Depth (cm);Sample date;Time (years);mean ambient CO2;mean increased CO2;ambient CO2 (n);increased CO2 (n);Description of data source;Value treatment
 ArizonaFACE - wheat - high N;Leavitt et al. 2001;0;15;Nov 95;0;1344;1228;4;4;fig. 3;assumed BD= 1.48 g/cm3 (Post et al. 1988)
 ArizonaFACE - wheat - high N;Leavitt et al. 2001;0;15;may 1996;0.5;1363;1305;4;4;fig. 3;assumed BD= 1.48 g/cm3 (Post et al. 1988)
@@ -234,7 +234,7 @@ WSL - sand, low N;Hagedorn et al. 2001;0;10;Jan 95;0;1310;1310;4;4;fig. 4, pers.
 WSL - sand, low N;Hagedorn et al. 2001;0;10;Sep 98;3.75;1167;1214;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
 WSL - sand, high N;Hagedorn et al. 2001;0;10;Jan 95;0;1310;1310;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
 WSL - sand, high N;Hagedorn et al. 2001;0;10;Sep 98;3.75;1120;1183;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
-=======
+=======;;;;;;;;;;;
 ﻿Experiment;Citation;min. Depth (cm);max. Depth (cm);Sample date;Time (years);mean ambient CO2;mean increased CO2;ambient CO2 (n);increased CO2 (n);Description of data source;Value treatment
 ArizonaFACE - wheat - high N;Leavitt et al. 2001;0;15;Nov 95;0;1344;1228;4;4;fig. 3;assumed BD= 1.48 g/cm3 (Post et al. 1988)
 ArizonaFACE - wheat - high N;Leavitt et al. 2001;0;15;may 1996;0.5;1363;1305;4;4;fig. 3;assumed BD= 1.48 g/cm3 (Post et al. 1988)
@@ -470,4 +470,4 @@ WSL - sand, low N;Hagedorn et al. 2001;0;10;Jan 95;0;1310;1310;4;4;fig. 4, pers.
 WSL - sand, low N;Hagedorn et al. 2001;0;10;Sep 98;3.75;1167;1214;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
 WSL - sand, high N;Hagedorn et al. 2001;0;10;Jan 95;0;1310;1310;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
 WSL - sand, high N;Hagedorn et al. 2001;0;10;Sep 98;3.75;1120;1183;4;4;fig. 4, pers. comm.;assumed bulk density: 1.0 g/cm3
->>>>>>> b67d756177121fbc1195ef0bf3ff21b68a71ec7e
+>>>>>>> b67d756177121fbc1195ef0bf3ff21b68a71ec7e;;;;;;;;;;;
