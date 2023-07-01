@@ -190,6 +190,8 @@ knitr::kable(AICS[which.min(AICS)], caption = "*Table 3: AICS of optimal multipl
 
 #var_selection is a list of all lm models that we can choose from. used_var is all the variables already used in the previous steps of the algorithms, and with the inner loop j and predictors_i[j] we test that old model + every variable not used yet and keep the best one
 
+AICS <- data.frame(AICS)
+
 ggplot(data = AICS, aes(x = 1:length(AICS), y = AICS)) + 
   geom_point() +
   geom_point(aes(x = which.min(AICS),
@@ -197,7 +199,7 @@ ggplot(data = AICS, aes(x = 1:length(AICS), y = AICS)) +
   theme(legend.position = "none") +
   labs(y = "AICS", x = "number of variables")
 
-AICS <- data.frame(AICS)
+
 
 
 ```
