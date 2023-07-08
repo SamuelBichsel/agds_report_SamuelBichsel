@@ -60,6 +60,9 @@ knitr::kable(models_table, caption = "*Table 1: Single predictor models and the 
 
 ```
 
+The best model is the one using PPFD_IN (Incoming photosynthetic photon flux density) as a single predictor. The adjusted R-Squared is 0.452, meaning 45.2% of the variability in GPP can be explained by the Regression model with the PPFD variable. The AIC is 29'689.5, which is interestingly not the lowest value (25'131 for LW_IN_F_MDS or MDS Gap-filled Long Wave incoming radiation, meaning that model better for generalization on new data). Except for that, the model using PPFD_IN performs slightly to significantly better compared to every other single variable model for both R-Squared and AIC. 
+
+
 ### Plots
 
 As a next step, we create the correlation plots used to visualize the linear regressions from before. This is yet again done with looping through all variables as single predictors and putting all plots into an originally empty list and then priting said list. 
@@ -118,11 +121,11 @@ plots
 
 *Figure 1: Correlation plots using single predictors to predict GPP values*
 
+Looking at these plots helps seeing why models using variables like incoming shortwave radiation (SW_IN_F) have a good R-Squared and why that is not the case when it comes to atmospheric pressure (PA_F) or precipitation (P_F) for example.
 
-The best model is the one using PPFD_IN (Incoming photosynthetic photon flux density) as a single predictor. The adjusted R-Squared is 0.452, meaning 45.2% of the variability in GPP can be explained by the Regression model with the PPFD variable. The AIC is 29'689.5, which is interestingly not the lowest value (25'131 for LW_IN_F_MDS or MDS Gap-filled Long Wave incoming radiation, meaning that model better for generalization on new data). Except for that, the model using PPFD_IN performs slightly to significantly better compared to every other single variable model for both R-Squared and AIC. 
 
 
-## Step 2: stepwise forward regression  
+## Step 2: Stepwise forward regression  
 
 For the complete stepwise forward regression (aka using the entire algorithm from the book), two loops are used: inner one going through all predictors and choosing the best possible model (going by R-Squared), and an outer one which takes these variables from the inner loop and makes a regression using more and more variables every time, and stops doing that once the model with the best AIC is found. 
 
@@ -172,36 +175,41 @@ for (i in 1:14){
      if(AICS[i] > AICS[i-1])
        
        break}
+
   
+optimal_model <- models1[which.min(AICS)]  
 }
 ```
 
-```{r}
 
-optimal_model <- models1[which.min(AICS)]
+*Table 2: summary of optimal multiple linear regression model to predict GPP values, using AIC as a indicator*
+```{r}
 lapply(optimal_model, summary)
 
 
 ```
-*Table 2: summary of optimal multiple linear regression model to predict GPP values, using AIC as a indicator*
+
 
 ```{r}
-knitr::kable(AICS[which.min(AICS)], caption = "*Table 3: AICS of optimal multiple linear regression model", align = "l")
+knitr::kable(AICS[which.min(AICS)], caption = "*Table 3: AICS of optimal multiple linear regression model*", align = "l")
 
 #var_selection is a list of all lm models that we can choose from. used_var is all the variables already used in the previous steps of the algorithms, and with the inner loop j and predictors_i[j] we test that old model + every variable not used yet and keep the best one
 
 AICS <- data.frame(AICS)
 
-ggplot(data = AICS, aes(x = 1:length(AICS), y = AICS)) + 
+ggplot(data = AICS, aes(x = 1:length(AICS), y = AICS)) +
   geom_point() +
   geom_point(aes(x = which.min(AICS),
                  y =  min(AICS), color = 'red')) + 
   theme(legend.position = "none") +
-  labs(y = "AICS", x = "number of variables")
+  labs(y = "AICS", x = "Number of variables")
+  
 
 
 
 
 ```
+*Figure 2: AICS values for optimal models by number of variables*
 
-The supposedly optimal model uses 10 of the 14 independent variables, with an adjusted R-Squared of 0.598 and an AICS of 27397.68. Most variables are statistically significant at the 0.1% level. The 3 variables that were not used are all MDS Gap filled (and the Friction velocity variable USTAR), which makes sense as to why they are not being used since they are very close to the non-gap filled variables and thus barely or not at all explain more variation. 
+
+The supposedly optimal model uses 9 of the 14 independent variables, with an adjusted R-Squared of 0.598 and an AICS of 24469.29. Most variables are statistically significant at the 0.1% level. The 4 variables that were not used are all MDS Gap filled (and the Friction velocity variable USTAR), which makes sense as to why they are not being used since they are very close to the non-gap filled variables and thus barely or not at all explain more variation. 
