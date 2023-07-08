@@ -127,7 +127,7 @@ Looking at these plots helps seeing why models using variables like incoming sho
 
 ## Step 2: Stepwise forward regression  
 
-For the complete stepwise forward regression (aka using the entire algorithm from the book), two loops are used: inner one going through all predictors and choosing the best possible model (going by R-Squared), and an outer one which takes these variables from the inner loop and makes a regression using more and more variables every time, and stops doing that once the model with the best AIC is found. 
+For the complete stepwise forward regression (aka using the entire algorithm from the book), two loops are used: an inner one going through all predictors and choosing the best possible model (going by R-Squared), and an outer one which takes these variables from the inner loop and makes a regression using more and more variables every time, and stops doing that once the model with the best AIC is found. 
 
 
 
