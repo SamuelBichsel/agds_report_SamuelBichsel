@@ -104,7 +104,7 @@ mod_knn <- caret::train(
 #
 ```
 
-The plot and evaluation of the linear regression model: 
+Then, using an external function eval_model from the R file eval_model.R, which was copied from the AGDS book, we plot and evaluate the linear regression model: 
 ```{r, fig.cap = "*Figure 1: Evaluation of linear regression model fit vs. GPP measurements*"}
 source(".././R/eval_model.R")
 
@@ -113,13 +113,13 @@ eval_model(mod = mod_lm, df_train = daily_fluxes_train, df_test = daily_fluxes_t
 ```
 The training and test models are extremely similar (basically identical actually), meaning the trained model does well when it comes to predicting unseen training data. 
 
-Doing the same for the k-nearest neighbor model:
+Doing the same evaluation for the k-nearest neighbor model:
 ```{r, fig.cap = "*Figure 2: Evaluation of k-nearest-neighbor model fit vs. GPP measurements*"}
 # KNN 
  eval_model(mod = mod_knn, df_train = daily_fluxes_train, df_test = daily_fluxes_test)
 ```
 
-The R2 and RMSE are better than for the linear regression model, though this time there is a slightly bigger difference in terms of how the model performs on training and test data, but it remains good in terms of model generalisability. 
+The R2 and RMSE are better than for the linear regression model, though this time there is a slightly bigger difference in terms of how the model performs on training and test data, but it remains good in terms of model generalisability.
 
 ```{r, include=FALSE}
 #Do the thing that is within the function in eval_model so I can have the fits for the other exercises, since for reasons I do not comprehend due to my weak understanding of programming, the fits simply do not get appended to the dataframes when simply running eval_model (and maybe that's normal).
@@ -205,6 +205,8 @@ ggplot() +
   
 ```
 
+The second set of plots compares the measured data to training and testing  data alone respectively.
+
 ```{r, fig.width = 12, fig.height = 8, fig.cap= "*Figure 4: Temporal variations of observed (black) and modelled GPP with KNN (red) and linear regression (blue) for the period 1997-2014, separated by training and testing data*"}
 
 # for training datasets only 
@@ -242,7 +244,6 @@ plot_grid(plot1, plot2, nrow = 2)
 ```
 It is visually quite hard to determine any clear trends through these visualizations. It does seem like the linear model quite consistently go slightly further in the extremes than the knn (on all three graphics the blue lines go further up and down than the red lines), but are still far from being able to predict the actual extreme GPP values. 
 
- 
  
 
 ## The role of k
@@ -368,7 +369,7 @@ knitr::kable(MAE_table, caption = "*Table 1: Mean absolute error on the knn mode
 The MAE values go down for a while with increasing k, then go back up after 50. Finding the optimal k for this model is the objective of the next exercise question. 
 
 
-### 3 optimal k
+### 3 Optimal k
 
 #### Is there an “optimal” k in terms of model generalisability? Edit your code to determine an optimal k.
 
