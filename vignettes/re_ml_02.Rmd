@@ -25,7 +25,7 @@ library(cowplot)
 Setup like said in the book, except use prop = 0.8 to keep 20% of the data for testing purposes. 
 ```{r}
 
-#make the data wrangling part be a function so I can apply it to both datasets without using way too much code. Yes I am aware this is not very nice looking code and could have been done more optimally but if I can be honest pipe operators confuse me for some reason so I just did it the fastest way I could come up with 
+#make the data wrangling part be a function so I can apply it to both datasets without using way too much code 
 
 wrangle <- function(data){
 data |>
@@ -127,12 +127,20 @@ mod_Lae <- caret::train(pp_Lae,
                     metric = "MAE"
                     )
 
+```
 
+*Table 1: summary of 60-fold cross validation for tuning parameter k on the Davos training dataset*
+```{r}
 mod_Dav
+
+```
+
+*Table 2: summary of 60-fold cross validation for tuning parameter k on the Laegern training dataset*
+```{r}
 mod_Lae
 
 ```
-Using MAE as a metric to tune the k, the best values are k = 25 for the Models of Davos and Laegern respectively. 
+Using MAE as a metric to tune the k, the best values are k = 25 for both the models of Davos and Laegern. 
 
 
 
@@ -171,7 +179,7 @@ daily_fluxes_Lae_test$Dav_fitted <- predict(mod_Dav, newdata = daily_fluxes_Lae_
 eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Dav_test)
 
 knitr::kable(daily_fluxes_Dav_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 1: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 3: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
 
 ```
 
@@ -180,17 +188,17 @@ knitr::kable(daily_fluxes_Dav_test |>
 eval_model(mod = mod_Dav, df_train = daily_fluxes_Dav_train, df_test = daily_fluxes_Lae_test)
 
 knitr::kable(daily_fluxes_Lae_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 2: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*")
+    yardstick::metrics(GPP_NT_VUT_REF, Dav_fitted), caption = "*Table 4: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Laegern test set*")
 
 ```
 
 
-#### Lagern training, Laegern testing set
+#### Laegern training, Laegern testing set
 ```{r, fig.cap = "*figure 3: Evaluation of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*"}
 eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Lae_test)
 
 knitr::kable(daily_fluxes_Lae_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 3: Metrics of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*")
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 5: Metrics of knn model fit vs. GPP measurements using the Laegern training set to predict the Laegern test set*")
 
 ```
 
@@ -201,14 +209,13 @@ knitr::kable(daily_fluxes_Lae_test |>
 eval_model(mod = mod_Lae, df_train = daily_fluxes_Lae_train, df_test = daily_fluxes_Dav_test)
 
 knitr::kable(daily_fluxes_Dav_test |> 
-    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 4: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
+    yardstick::metrics(GPP_NT_VUT_REF, Lae_fitted), caption = "*Table 6: Metrics of knn model fit vs. GPP measurements using the Davos training set to predict the Davos test set*")
 
 
 ```
 
 
-
-The results for these across-site model predictions aren't too bad, but definitely below the within-site, with all 3 metrics being slightly worse. 
+The results for these across-site model predictions aren't too bad, but mostly below the within-site, with all 3 metrics being slightly worse. Interestingly, the Laegern training set makes very similar predictions on both the Davos and Laegern testing sets. Otherwise, for both testing sites the RMSE is about 1 bigger and the R-Squared about 0.15-0.2 smaller (both worse) when comparing across-site and within-site predictions. Also, the Laegern training dataset performs worse on both training and testing than the Davos one, which could be due to, i.e., more outliers or irregularities/phases of higher GPP, or simply due to the smaller dataset making the training harder or less accurate. 
 
 
 ## Model with pooled data 
@@ -280,7 +287,7 @@ Annual Precipitation:
 Davos: 1062 mm 
 Laegern: 1100 mm
 
-To compare the out.of-sample predictions of the two sites, we once again turn to temporal variations of fits vs. GPP measurements. To both sites measurements we compare the within-site and across-site predictions, and hope to find some consistent differences in the predictions that could be explained by the differences in the site characteristics.
+To compare the out-of-sample predictions of the two sites, we once again turn to temporal variations of fits vs. GPP measurements. To both sites measurements we compare the within-site and across-site predictions, and hope to find some consistent differences in the predictions that could be explained by the differences in the site characteristics.
 
 ```{r, fig.width = 13,fig.height = 5, fig.cap = "*Figure 5: Time variation for the site of Davos of measured GPP and precictions using both sites training data*"}
 

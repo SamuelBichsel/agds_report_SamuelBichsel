@@ -91,7 +91,7 @@ mod_lm <- caret::train(
   trControl = caret::trainControl(method = "none"),
   metric = "RMSE"
 )
-summary(mod_lm)
+
 # Fit KNN model
 mod_knn <- caret::train(
   pp, 
